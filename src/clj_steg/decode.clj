@@ -18,8 +18,8 @@
       (if (>= cnt  msg-length)
         (apply str (reverse message))
         (recur 
-         (if (> (inc x) image-width) 0 (inc x))
-         (if (> (inc x) image-width) (inc y) y)
+         (if (>= (inc x) image-width) 0 (inc x))
+         (if (>= (inc x) image-width) (inc y) y)
          (cons (char (:red (image/get-rgb-values img x y))) message) 
          (inc cnt))))))
 

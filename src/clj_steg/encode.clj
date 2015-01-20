@@ -22,7 +22,7 @@
                col (rest msg)]
           (if (nil? current-char)
             img
-            (let [new-x (if (> (inc x) width) 0 (inc x))
-                  new-y (if (> (inc x) width) (inc y) y)] 
+            (let [new-x (if (>= (inc x) width) 0 (inc x))
+                  new-y (if (>= (inc x) width) (inc y) y)] 
               (apply-pixel img x y current-char)
               (recur new-x new-y (first col) (rest col)))))))))
