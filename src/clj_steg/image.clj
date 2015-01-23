@@ -2,7 +2,8 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string])
   (:import [javax.imageio ImageIO]
-           [java.awt Color]))
+           [java.awt Color]
+           [java.io File]))
 
 (defn read-image [file]
   "Read in an image from the given source"
@@ -11,8 +12,8 @@
  (defn- get-extension [file]
    (last (string/split file #"\.")))
 
-(defn- write-image [src file]
-  (ImageIO/write src (get-extension file) file))
+(defn write-image [src file]
+  (ImageIO/write src (get-extension file) (File. file)))
 
 (defn- get-rgb [input x y]
   "Gets the rgb component of the given pixel"

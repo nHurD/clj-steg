@@ -1,28 +1,46 @@
 (ns clj-steg.encode
   (:require [clj-steg.image :as image]))
 
-(defn- apply-pixel [img x y data]
-  "Apply data to the given pixel at x and y"
-  (let [pixel (image/get-rgb-values img x y)]
-    (image/set-rgb-value img x y (assoc pixel :red data))))
+(def ^:private image-data (atom {:image nil :x 0 :y 0}))
 
-(defn encode-image [image message]
+(add-watch image-data :on-change 
+           (fn [k atm old-state new-state]
+             {:pre [(not (nil? (:image new-state)))]}
+             (when (>= (:x new-state) (-> new-state :image .getWidth dec))
+               (swap! atm assoc :x 0 :y (-> new-state :y inc)))))
+
+(defn- set-image 
+  "Sets the image into the atom for later use"
+  [image] 
+  (:image (swap! image-data assoc :image image)))
+
+(defn- message-size-ok?
+  "Determine if the message size is smaller than the image"
+  [image message]
+  (let [width (-> image image/read-image set-image .getWidth)
+        height (-> @image-data :image .getHeight)]
+    (>= (- (* width height) 2) (count message))))
+
+(defn- apply-image 
+  "Apply data to the image"
+  [data cnt]
+  {:pre [(not (nil? (:image @image-data)))]}
+  (->> (-> (image/get-rgb-values (:image @image-data)
+                                 (:x @image-data)
+                                 (:y @image-data))
+           (assoc :red data))
+       (image/set-rgb-value (:image @image-data)
+                            (:x (swap! image-data assoc :x cnt))
+                            (:y @image-data))))
+
+(defn encode-image 
   "Encode the message into the image"
-  (let [img (image/read-image image)
-        width (.getWidth img)
-        height (.getHeight img)]
-    (if (> (count message) (* width height))
-      (throw (Exception. "Message is too large for this image"))
-      (let [msg (-> (map int message)
-                    (conj (count message))
-                    (conj (int \E)))]
-        (loop [x 0 
-               y 0 
-               current-char (first msg) 
-               col (rest msg)]
-          (if (nil? current-char)
-            img
-            (let [new-x (if (>= (inc x) width) 0 (inc x))
-                  new-y (if (>= (inc x) width) (inc y) y)] 
-              (apply-pixel img x y current-char)
-              (recur new-x new-y (first col) (rest col)))))))))
+  [image message]
+  {:pre [(< 0 (count message)) (message-size-ok? image message)]}
+  (when-let [msg (->> (-> (map int message)
+                     (conj (count message))
+                     (conj (int \E))
+                     (interleave (->> (count message) (+ 2) (range))))
+                 (partition 2))]
+    (doall (map #(apply apply-image %) msg))
+    (image/write-image (:image @image-data) "test1.png")))
