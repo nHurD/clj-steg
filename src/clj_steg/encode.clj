@@ -14,12 +14,25 @@
   [image] 
   (:image (swap! image-data assoc :image image)))
 
+(defn- get-length-data
+  "Determines the length information based on the given message"
+  [message]
+  (loop [shift-amount 8 value (-> (count message) (bit-and 255)) res []]
+    (if (= 0 value)
+      (cons (count res) res) 
+      (recur (+ 8 shift-amount) 
+             (-> (count message)
+                 (bit-shift-right shift-amount)
+                 (bit-and 255))
+             (conj res value)))))
+
 (defn- message-size-ok?
   "Determine if the message size is smaller than the image"
   [image message]
   (let [width (-> image image/read-image set-image .getWidth)
         height (-> @image-data :image .getHeight)]
-    (>= (- (* width height) 2) (count message))))
+    (>= (- (* width height)
+           (-> (get-length-data message) (count) (+ 1))))))
 
 (defn- apply-image 
   "Apply data to the image"
@@ -38,7 +51,7 @@
   [image message]
   {:pre [(< 0 (count message)) (message-size-ok? image message)]}
   (when-let [msg (->> (-> (map int message)
-                     (conj (count message))
+                     (conj (get-length-data message))
                      (conj (int \E))
                      (interleave (->> (count message) (+ 2) (range))))
                  (partition 2))]
