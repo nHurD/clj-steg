@@ -7,10 +7,7 @@
            (fn [k atm old-state new-state]
              {:pre [(not (nil? (:image new-state)))]}
              (when (>= (:x new-state) (-> new-state :image .getWidth dec))
-               (swap! atm
-                      assoc
-                      :x 0
-                      :y (-> new-state :y inc)))))
+               (swap! atm assoc :x 0 :y (-> new-state :y inc)))))
 
 (defn- set-image
   "Sets the image into the atom for later use"
@@ -37,18 +34,6 @@
     (>= (- (* width height)
            (-> (get-length-data message) (count) (+ 1))))))
 
-(defn- test-apply
-  [data]
-  {:pre [(not (nil? (:image @image-data)))]}
-  (let [x (:x (swap! image-data
-                     assoc :x (-> @image-data :x inc)))
-        y (:y @image-data)]
-    (printf "x %s y %s, data: %s\n" x y data)))
-
-(defn- test-set-value
-  [img x y data]
-  (printf "x: %s, y: %s, data: %s" x y data))
-
 (defn- apply-image
   "Apply data to the image"
   [data]
@@ -64,10 +49,12 @@
 
 (defn encode-image
   "Encode the message into the image"
-  [image message]
+  [image message dest]
   {:pre [(< 0 (count message)) (message-size-ok? image message)]}
   (when-let [msg (-> (map int message)
                      (conj (get-length-data message))
                      (conj (int \E))
                      (flatten))]
-    (doall (map apply-image msg))))
+    (doall (map apply-image msg))
+    (image/write-image (:image @image-data) dest)
+    (str "Message encoded sucessfully and saved to " dest)))
