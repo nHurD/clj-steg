@@ -9,7 +9,7 @@
              (when (>= (:x new-state) (-> new-state :image .getWidth dec))
                (swap! atm assoc :x 0 :y (-> new-state :y inc)))))
 
-(defn set-image
+(defn- set-image
   "Sets the image into the atom for later use"
   [image]
   (:image (swap! image-data assoc :image image)))
